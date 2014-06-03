@@ -1,26 +1,25 @@
 /*-
  * GPL LICENSE SUMMARY
- * 
+ *
  *   Copyright(c) 2010-2014 Intel Corporation. All rights reserved.
- * 
- *   This program is free software; you can redistribute it and/or modify 
+ *
+ *   This program is free software; you can redistribute it and/or modify
  *   it under the terms of version 2 of the GNU General Public License as
  *   published by the Free Software Foundation.
- * 
- *   This program is distributed in the hope that it will be useful, but 
- *   WITHOUT ANY WARRANTY; without even the implied warranty of 
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU 
+ *
+ *   This program is distributed in the hope that it will be useful, but
+ *   WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  *   General Public License for more details.
- * 
- *   You should have received a copy of the GNU General Public License 
- *   along with this program; if not, write to the Free Software 
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program; if not, write to the Free Software
  *   Foundation, Inc., 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
- *   The full GNU General Public License is included in this distribution 
+ *   The full GNU General Public License is included in this distribution
  *   in the file called LICENSE.GPL.
- * 
+ *
  *   Contact Information:
  *   Intel Corporation
- * 
  */
 
 #include <linux/device.h>
@@ -104,7 +103,7 @@ int local_pci_num_vf(struct pci_dev *dev)
 
 	if (!dev->is_physfn)
 		return 0;
-	
+
 	return iov->nr_virtfn;
 #else
 	return pci_num_vf(dev);
@@ -137,7 +136,7 @@ store_max_vfs(struct device *dev, struct device_attribute *attr,
 	else /* do nothing if change max_vfs number */
 		err = -EINVAL;
 
-	return err ? err : count;							
+	return err ? err : count;
 }
 
 static DEVICE_ATTR(max_vfs, S_IRUGO | S_IWUSR, show_max_vfs, store_max_vfs);
@@ -321,7 +320,7 @@ igbuio_pci_setup_iomem(struct pci_dev *dev, struct uio_info *info,
 	unsigned long addr, len;
 	void *internal_addr;
 
-	if (sizeof(info->mem) / sizeof (info->mem[0]) <= n)  
+	if (sizeof(info->mem) / sizeof (info->mem[0]) <= n)
 		return (EINVAL);
 
 	addr = pci_resource_start(dev, pci_bar);
@@ -346,7 +345,7 @@ igbuio_pci_setup_ioport(struct pci_dev *dev, struct uio_info *info,
 {
 	unsigned long addr, len;
 
-	if (sizeof(info->port) / sizeof (info->port[0]) <= n)  
+	if (sizeof(info->port) / sizeof (info->port[0]) <= n)
 		return (EINVAL);
 
 	addr = pci_resource_start(dev, pci_bar);
