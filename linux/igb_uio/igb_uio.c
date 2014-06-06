@@ -73,7 +73,7 @@ igbuio_get_uio_pci_dev(struct uio_info *info)
 /* sriov sysfs */
 int local_pci_num_vf(struct pci_dev *dev)
 {
-#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,34)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 34)
 	struct iov {
 		int pos;
 		int nres;
@@ -82,7 +82,7 @@ int local_pci_num_vf(struct pci_dev *dev)
 		u16 total;
 		u16 initial;
 		u16 nr_virtfn;
-	} *iov = (struct iov*)dev->sriov;
+	} *iov = (struct iov *)dev->sriov;
 
 	if (!dev->is_physfn)
 		return 0;
@@ -126,7 +126,7 @@ static DEVICE_ATTR(max_vfs, S_IRUGO | S_IWUSR, show_max_vfs, store_max_vfs);
 
 static struct attribute *dev_attrs[] = {
 	&dev_attr_max_vfs.attr,
-        NULL,
+	NULL,
 };
 
 static const struct attribute_group dev_attr_grp = {
@@ -137,7 +137,7 @@ static inline int
 pci_lock(struct pci_dev * pdev)
 {
 	/* Some function names changes between 3.2.0 and 3.3.0... */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,3,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 3, 0)
 	pci_block_user_cfg_access(pdev);
 	return 1;
 #else
@@ -149,7 +149,7 @@ static inline void
 pci_unlock(struct pci_dev * pdev)
 {
 	/* Some function names changes between 3.2.0 and 3.3.0... */
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,3,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 3, 0)
 	pci_unblock_user_cfg_access(pdev);
 #else
 	pci_cfg_access_unlock(pdev);
@@ -302,8 +302,8 @@ igbuio_pci_setup_iomem(struct pci_dev *dev, struct uio_info *info,
 	unsigned long addr, len;
 	void *internal_addr;
 
-	if (sizeof(info->mem) / sizeof (info->mem[0]) <= n)
-		return (EINVAL);
+	if (sizeof(info->mem) / sizeof(info->mem[0]) <= n)
+		return -EINVAL;
 
 	addr = pci_resource_start(dev, pci_bar);
 	len = pci_resource_len(dev, pci_bar);
@@ -327,20 +327,20 @@ igbuio_pci_setup_ioport(struct pci_dev *dev, struct uio_info *info,
 {
 	unsigned long addr, len;
 
-	if (sizeof(info->port) / sizeof (info->port[0]) <= n)
-		return (EINVAL);
+	if (sizeof(info->port) / sizeof(info->port[0]) <= n)
+		return -EINVAL;
 
 	addr = pci_resource_start(dev, pci_bar);
 	len = pci_resource_len(dev, pci_bar);
 	if (addr == 0 || len == 0)
-		return (-1);
+		return -EINVAL;
 
 	info->port[n].name = name;
 	info->port[n].start = addr;
 	info->port[n].size = len;
 	info->port[n].porttype = UIO_PORT_X86;
 
-	return (0);
+	return 0;
 }
 
 /* Unmap previously ioremap'd resources */
@@ -348,6 +348,7 @@ static void
 igbuio_pci_release_iomem(struct uio_info *info)
 {
 	int i;
+
 	for (i = 0; i < MAX_UIO_MAPS; i++) {
 		if (info->mem[i].internal_addr)
 			iounmap(info->mem[i].internal_addr);
@@ -376,14 +377,16 @@ igbuio_setup_bars(struct pci_dev *dev, struct uio_info *info)
 				pci_resource_start(dev, i) != 0) {
 			flags = pci_resource_flags(dev, i);
 			if (flags & IORESOURCE_MEM) {
-				if ((ret = igbuio_pci_setup_iomem(dev, info,
-						iom, i, bar_names[i])) != 0)
-					return (ret);
+				ret = igbuio_pci_setup_iomem(dev, info, iom,
+							     i, bar_names[i]);
+				if (ret != 0)
+					return ret;
 				iom++;
 			} else if (flags & IORESOURCE_IO) {
-				if ((ret = igbuio_pci_setup_ioport(dev, info,
-						iop, i, bar_names[i])) != 0)
-					return (ret);
+				ret = igbuio_pci_setup_ioport(dev, info, iop,
+							      i, bar_names[i]);
+				if (ret != 0)
+					return ret;
 				iop++;
 			}
 		}
@@ -392,7 +395,7 @@ igbuio_setup_bars(struct pci_dev *dev, struct uio_info *info)
 	return ((iom != 0) ? ret : ENOENT);
 }
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(3,8,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 8, 0)
 static int __devinit
 #else
 static int
