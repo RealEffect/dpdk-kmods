@@ -22,6 +22,8 @@
  *   Intel Corporation
  */
 
+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+
 #include <linux/device.h>
 #include <linux/module.h>
 #include <linux/pci.h>
@@ -287,7 +289,7 @@ done:
 	pci_unlock(pdev);
 spin_unlock:
 	spin_unlock_irqrestore(&udev->lock, flags);
-	printk(KERN_INFO "irq 0x%x %s\n", irq, (ret == IRQ_HANDLED) ? "handled" : "not handled");
+	pr_info("irq 0x%x %s\n", irq, (ret == IRQ_HANDLED) ? "handled" : "not handled");
 
 	return ret;
 }
@@ -408,7 +410,7 @@ igbuio_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	 * memory
 	 */
 	if (pci_enable_device(dev)) {
-		printk(KERN_ERR "Cannot enable PCI device\n");
+		dev_err(&dev->dev, "Cannot enable PCI device\n");
 		goto fail_free;
 	}
 
@@ -417,7 +419,7 @@ igbuio_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	 * module
 	 */
 	if (pci_request_regions(dev, "igb_uio")) {
-		printk(KERN_ERR "Cannot request regions\n");
+		dev_err(&dev->dev, "Cannot request regions\n");
 		goto fail_disable;
 	}
 
@@ -430,10 +432,10 @@ igbuio_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
 
 	/* set 64-bit DMA mask */
 	if (pci_set_dma_mask(dev,  DMA_BIT_MASK(64))) {
-		printk(KERN_ERR "Cannot set DMA mask\n");
+		dev_err(&dev->dev, "Cannot set DMA mask\n");
 		goto fail_release_iomem;
 	} else if (pci_set_consistent_dma_mask(dev, DMA_BIT_MASK(64))) {
-		printk(KERN_ERR "Cannot set consistent DMA mask\n");
+		dev_err(&dev->dev, "Cannot set consistent DMA mask\n");
 		goto fail_release_iomem;
 	}
 
@@ -459,7 +461,7 @@ igbuio_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
 		}
 		else {
 			pci_disable_msix(udev->pdev);
-			printk(KERN_INFO "fail to enable pci msix, or not enough msix entries\n");
+			pr_info("fail to enable pci msix, or not enough msix entries\n");
 		}
 	}
 	switch (udev->mode) {
@@ -487,7 +489,7 @@ igbuio_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	if (uio_register_device(&dev->dev, &udev->info))
 		goto fail_release_iomem;
 
-	printk(KERN_INFO "uio device registered with irq %lx\n", udev->info.irq);
+	pr_info("uio device registered with irq %lx\n", udev->info.irq);
 
 	return 0;
 
@@ -511,7 +513,7 @@ igbuio_pci_remove(struct pci_dev *dev)
 	struct uio_info *info = pci_get_drvdata(dev);
 
 	if (info->priv == NULL) {
-		printk(KERN_DEBUG "Not igbuio device\n");
+		pr_notice("Not igbuio device\n");
 		return;
 	}
 
@@ -531,18 +533,18 @@ static int
 igbuio_config_intr_mode(char *intr_str)
 {
 	if (!intr_str) {
-		printk(KERN_INFO "Use MSIX interrupt by default\n");
+		pr_info("Use MSIX interrupt by default\n");
 		return 0;
 	}
 
 	if (!strcmp(intr_str, RTE_INTR_MODE_MSIX_NAME)) {
 		igbuio_intr_mode_preferred = RTE_INTR_MODE_MSIX;
-		printk(KERN_INFO "Use MSIX interrupt\n");
+		pr_info("Use MSIX interrupt\n");
 	} else if (!strcmp(intr_str, RTE_INTR_MODE_LEGACY_NAME)) {
 		igbuio_intr_mode_preferred = RTE_INTR_MODE_LEGACY;
-		printk(KERN_INFO "Use legacy interrupt\n");
+		pr_info("Use legacy interrupt\n");
 	} else {
-		printk(KERN_INFO "Error: bad parameter - %s\n", intr_str);
+		pr_info("Error: bad parameter - %s\n", intr_str);
 		return -EINVAL;
 	}
 
