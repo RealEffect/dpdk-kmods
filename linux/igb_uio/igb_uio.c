@@ -35,21 +35,6 @@
 #include <rte_pci_dev_features.h>
 
 /**
- * MSI-X related macros, copy from linux/pci_regs.h in kernel 2.6.39,
- * but none of them in kernel 2.6.35.
- */
-#ifndef PCI_MSIX_ENTRY_SIZE
-#define PCI_MSIX_ENTRY_SIZE             16
-#define PCI_MSIX_ENTRY_LOWER_ADDR       0
-#define PCI_MSIX_ENTRY_UPPER_ADDR       4
-#define PCI_MSIX_ENTRY_DATA             8
-#define PCI_MSIX_ENTRY_VECTOR_CTRL      12
-#define PCI_MSIX_ENTRY_CTRL_MASKBIT     1
-#endif
-
-#define IGBUIO_NUM_MSI_VECTORS 1
-
-/**
  * A structure describing the private information for a uio device.
  */
 struct rte_uio_pci_dev {
@@ -57,8 +42,6 @@ struct rte_uio_pci_dev {
 	struct pci_dev *pdev;
 	spinlock_t lock; /* spinlock for accessing PCI config space or msix data in multi tasks/isr */
 	enum rte_intr_mode mode;
-	struct msix_entry \
-		msix_entries[IGBUIO_NUM_MSI_VECTORS]; /* pointer to the msix vectors to be allocated later */
 };
 
 static char *intr_mode = NULL;
@@ -400,6 +383,7 @@ static int
 igbuio_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
 {
 	struct rte_uio_pci_dev *udev;
+	struct msix_entry msix_entry;
 	int err;
 
 	udev = kzalloc(sizeof(struct rte_uio_pci_dev), GFP_KERNEL);
@@ -459,12 +443,10 @@ igbuio_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
 
 	/* check if it need to try msix first */
 	if (igbuio_intr_mode_preferred == RTE_INTR_MODE_MSIX) {
-		int vector;
-
-		for (vector = 0; vector < IGBUIO_NUM_MSI_VECTORS; vector ++)
-			udev->msix_entries[vector].entry = vector;
-
-		if (pci_enable_msix(udev->pdev, udev->msix_entries, IGBUIO_NUM_MSI_VECTORS) == 0) {
+		/* Only 1 msi-x vector needed */
+		msix_entry.entry = 0;
+		if (pci_enable_msix(dev, &msix_entry, 1) == 0) {
+			dev_dbg(&dev->dev, "using MSI-X");
 			udev->mode = RTE_INTR_MODE_MSIX;
 		}
 		else {
@@ -475,7 +457,7 @@ igbuio_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	switch (udev->mode) {
 	case RTE_INTR_MODE_MSIX:
 		udev->info.irq_flags = 0;
-		udev->info.irq = udev->msix_entries[0].vector;
+		udev->info.irq = msix_entry.vector;
 		break;
 	case RTE_INTR_MODE_MSI:
 		break;
@@ -522,6 +504,7 @@ static void
 igbuio_pci_remove(struct pci_dev *dev)
 {
 	struct uio_info *info = pci_get_drvdata(dev);
+	struct rte_uio_pci_dev *udev = igbuio_get_uio_pci_dev(info);
 
 	if (info->priv == NULL) {
 		pr_notice("Not igbuio device\n");
@@ -531,8 +514,7 @@ igbuio_pci_remove(struct pci_dev *dev)
 	sysfs_remove_group(&dev->dev.kobj, &dev_attr_grp);
 	uio_unregister_device(info);
 	igbuio_pci_release_iomem(info);
-	if (((struct rte_uio_pci_dev *)info->priv)->mode ==
-			RTE_INTR_MODE_MSIX)
+	if (udev->mode == RTE_INTR_MODE_MSIX)
 		pci_disable_msix(dev);
 	pci_release_regions(dev);
 	pci_disable_device(dev);
