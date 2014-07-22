@@ -34,6 +34,11 @@
 
 #include <rte_pci_dev_features.h>
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 3, 0)
+#define pci_cfg_access_lock   pci_block_user_cfg_access
+#define pci_cfg_access_unlock pci_unblock_user_cfg_access
+#endif
+
 /**
  * A structure describing the private information for a uio device.
  */
