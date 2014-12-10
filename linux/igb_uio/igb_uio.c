@@ -71,7 +71,7 @@ store_max_vfs(struct device *dev, struct device_attribute *attr,
 	unsigned long max_vfs;
 	struct pci_dev *pdev = container_of(dev, struct pci_dev, dev);
 
-	if (0 != strict_strtoul(buf, 0, &max_vfs))
+	if (0 != kstrtoul(buf, 0, &max_vfs))
 		return -EINVAL;
 
 	if (0 == max_vfs)
