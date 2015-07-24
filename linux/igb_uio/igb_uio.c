@@ -31,6 +31,7 @@
 #include <linux/io.h>
 #include <linux/msi.h>
 #include <linux/version.h>
+#include <linux/slab.h>
 
 #include <rte_pci_dev_features.h>
 
