@@ -49,12 +49,6 @@ struct rte_uio_pci_dev {
 static char *intr_mode = NULL;
 static enum rte_intr_mode igbuio_intr_mode_preferred = RTE_INTR_MODE_MSIX;
 
-static inline struct rte_uio_pci_dev *
-igbuio_get_uio_pci_dev(struct uio_info *info)
-{
-	return container_of(info, struct rte_uio_pci_dev, info);
-}
-
 /* sriov sysfs */
 static ssize_t
 show_max_vfs(struct device *dev, struct device_attribute *attr,
@@ -133,7 +127,7 @@ igbuio_msix_mask_irq(struct msi_desc *desc, int32_t state)
 static int
 igbuio_pci_irqcontrol(struct uio_info *info, s32 irq_state)
 {
-	struct rte_uio_pci_dev *udev = igbuio_get_uio_pci_dev(info);
+	struct rte_uio_pci_dev *udev = info->priv;
 	struct pci_dev *pdev = udev->pdev;
 
 	pci_cfg_access_lock(pdev);
@@ -158,7 +152,7 @@ igbuio_pci_irqcontrol(struct uio_info *info, s32 irq_state)
 static irqreturn_t
 igbuio_pci_irqhandler(int irq, struct uio_info *info)
 {
-	struct rte_uio_pci_dev *udev = igbuio_get_uio_pci_dev(info);
+	struct rte_uio_pci_dev *udev = info->priv;
 
 	/* Legacy mode need to mask in hardware */
 	if (udev->mode == RTE_INTR_MODE_LEGACY &&
@@ -402,12 +396,13 @@ static void
 igbuio_pci_remove(struct pci_dev *dev)
 {
 	struct uio_info *info = pci_get_drvdata(dev);
-	struct rte_uio_pci_dev *udev = igbuio_get_uio_pci_dev(info);
+	struct rte_uio_pci_dev *udev;
 
 	if (info->priv == NULL) {
 		pr_notice("Not igbuio device\n");
 		return;
 	}
+	udev = info->priv;
 
 	sysfs_remove_group(&dev->dev.kobj, &dev_attr_grp);
 	uio_unregister_device(info);
