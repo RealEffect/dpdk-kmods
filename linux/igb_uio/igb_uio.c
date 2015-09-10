@@ -54,8 +54,7 @@ static ssize_t
 show_max_vfs(struct device *dev, struct device_attribute *attr,
 	     char *buf)
 {
-	return snprintf(buf, 10, "%u\n",
-			pci_num_vf(container_of(dev, struct pci_dev, dev)));
+	return snprintf(buf, 10, "%u\n", dev_num_vf(dev));
 }
 
 static ssize_t
@@ -64,7 +63,7 @@ store_max_vfs(struct device *dev, struct device_attribute *attr,
 {
 	int err = 0;
 	unsigned long max_vfs;
-	struct pci_dev *pdev = container_of(dev, struct pci_dev, dev);
+	struct pci_dev *pdev = to_pci_dev(dev);
 
 	if (0 != kstrtoul(buf, 0, &max_vfs))
 		return -EINVAL;
