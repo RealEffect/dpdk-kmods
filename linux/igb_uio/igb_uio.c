@@ -167,6 +167,37 @@ igbuio_pci_irqhandler(int irq, struct uio_info *info)
 	return IRQ_HANDLED;
 }
 
+/**
+ * This gets called while opening uio device file.
+ */
+static int
+igbuio_pci_open(struct uio_info *info, struct inode *inode)
+{
+	struct rte_uio_pci_dev *udev = info->priv;
+	struct pci_dev *dev = udev->pdev;
+
+	pci_reset_function(dev);
+
+	/* set bus master, which was cleared by the reset function */
+	pci_set_master(dev);
+
+	return 0;
+}
+
+static int
+igbuio_pci_release(struct uio_info *info, struct inode *inode)
+{
+	struct rte_uio_pci_dev *udev = info->priv;
+	struct pci_dev *dev = udev->pdev;
+
+	/* stop the device from further DMA */
+	pci_clear_master(dev);
+
+	pci_reset_function(dev);
+
+	return 0;
+}
+
 /* Remap pci resources described by bar #pci_bar in uio resource n. */
 static int
 igbuio_pci_setup_iomem(struct pci_dev *dev, struct uio_info *info,
@@ -323,6 +354,8 @@ igbuio_pci_probe(struct pci_dev *dev, const struct pci_device_id *id)
 	udev->info.version = "0.1";
 	udev->info.handler = igbuio_pci_irqhandler;
 	udev->info.irqcontrol = igbuio_pci_irqcontrol;
+	udev->info.open = igbuio_pci_open;
+	udev->info.release = igbuio_pci_release;
 	udev->info.priv = udev;
 	udev->pdev = dev;
 
