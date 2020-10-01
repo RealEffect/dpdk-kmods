@@ -1,0 +1,77 @@
+; SPDX-License-Identifier: BSD-3-Clause
+; Copyright (c) Microsoft Corporation. All rights reserved
+;
+; netuio.inf
+;
+
+[Version]
+Signature="$WINDOWS NT$"
+Class=%ClassName%
+ClassGuid={78912BC1-CB8E-4B28-A329-F322EBADBE0F}
+Provider=%Provider%
+CatalogFile=netuio.cat
+DriverVer=
+
+[ClassInstall32]
+Addreg=netuioClassReg
+
+[netuioClassReg]
+HKR,,,0,%ClassName%
+HKR,,Icon,,-5
+
+;*****************************************
+; Install Section
+;*****************************************
+
+[Manufacturer]
+%ManufacturerName%=Standard, NT$ARCH$
+
+[Standard.NT$ARCH$]
+%netuio.DeviceDesc%=netuio_Device, Root\netuio
+
+[netuio_Device.NT]
+CopyFiles=Drivers_Dir
+
+[Drivers_Dir]
+netuio.sys
+
+[netuio_Device.NT.HW]
+AddReg=Device.HW.Registry
+
+[Device.HW.Registry]
+; Ensure that only administrators can access our device object.
+HKR,,Security,,"D:P(A;;GA;;;SY)(A;;GA;;;BA)"
+
+;-------------- Service installation
+[netuio_Device.NT.Services]
+AddService = netuio,%SPSVCINST_ASSOCSERVICE%, netuio_Service_Inst
+
+; -------------- netuio driver install sections
+[netuio_Service_Inst]
+DisplayName    = %netuio.SVCDESC%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\netuio.sys
+AddReg         = DMAr.reg
+
+[DestinationDirs]
+DefaultDestDir = 12
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+netuio.sys  = 1,,
+
+[Strings]
+SPSVCINST_ASSOCSERVICE= 0x00000002
+ManufacturerName = "Microsoft"
+Provider = "Vendor"
+ClassName = "Windows UIO"
+DiskName = "DPDK netUIO Installation Disk"
+netuio.DeviceDesc = "netuio Device"
+netuio.SVCDESC = "netuio Service"
+
+[DMAr.reg]
+HKR,Parameters,DmaRemappingCompatible,0x00010001,1
