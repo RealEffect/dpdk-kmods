@@ -15,7 +15,21 @@
 #include <linux/version.h>
 #include <linux/slab.h>
 
-#include <rte_pci_dev_features.h>
+/**
+ * These enum and macro definitions are copied from the
+ * file rte_pci_dev_features.h
+ */
+enum rte_intr_mode {
+	RTE_INTR_MODE_NONE = 0,
+	RTE_INTR_MODE_LEGACY,
+	RTE_INTR_MODE_MSI,
+	RTE_INTR_MODE_MSIX
+};
+#define RTE_INTR_MODE_NONE_NAME "none"
+#define RTE_INTR_MODE_LEGACY_NAME "legacy"
+#define RTE_INTR_MODE_MSI_NAME "msi"
+#define RTE_INTR_MODE_MSIX_NAME "msix"
+
 
 #include "compat.h"
 
