@@ -43,6 +43,12 @@ HKR,,Icon,,-5
 %Intel.F101F.Description%=netuio_Device, PCI\VEN_8086&DEV_101F
 %Intel.F104F.Description%=netuio_Device, PCI\VEN_8086&DEV_104F
 %Intel.F104E.Description%=netuio_Device, PCI\VEN_8086&DEV_104E
+%Intel.F1591.Description%=netuio_Device, PCI\VEN_8086&DEV_1591
+%Intel.F1592.Description%=netuio_Device, PCI\VEN_8086&DEV_1592
+%Intel.F1593.Description%=netuio_Device, PCI\VEN_8086&DEV_1593
+%Intel.F1599.Description%=netuio_Device, PCI\VEN_8086&DEV_1599
+%Intel.F159A.Description%=netuio_Device, PCI\VEN_8086&DEV_159A
+%Intel.F159B.Description%=netuio_Device, PCI\VEN_8086&DEV_159B
 %vmxnet3.Description%=netuio_Device, PCI\VEN_15AD&DEV_07B0
 
 [netuio_Device.NT]
@@ -102,6 +108,12 @@ Intel.F15FF.Description = "Intel(R) Ethernet Controller X710 for 10GBASE-T"
 Intel.F101F.Description = "Intel(R) Ethernet Controller V710 for 5GBASE-T"
 Intel.F104F.Description = "Intel(R) Ethernet Controller X710 for 10 Gigabit backplane"
 Intel.F104E.Description = "Intel(R) Ethernet Controller X710 for 10 Gigabit SFP+"
+Intel.F1591.Description = "Intel(R) Ethernet Controller E810-C for backplane"
+Intel.F1592.Description = "Intel(R) Ethernet Controller E810-C for QSFP"
+Intel.F1593.Description = "Intel(R) Ethernet Controller E810-C for SFP"
+Intel.F1599.Description = "Intel(R) Ethernet Controller E810-XXV for backplane"
+Intel.F159A.Description = "Intel(R) Ethernet Controller E810-XXV for QSFP"
+Intel.F159B.Description = "Intel(R) Ethernet Controller E810-XXV for SFP"
 vmxnet3.Description = "VMWare Paravirtualized Ethernet v3"
 netuio.SVCDESC = "netuio Service"
 
