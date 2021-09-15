@@ -49,6 +49,12 @@ HKR,,Icon,,-5
 %Intel.F1599.Description%=netuio_Device, PCI\VEN_8086&DEV_1599
 %Intel.F159A.Description%=netuio_Device, PCI\VEN_8086&DEV_159A
 %Intel.F159B.Description%=netuio_Device, PCI\VEN_8086&DEV_159B
+%Intel.F154C.Description%=netuio_Device, PCI\VEN_8086&DEV_154C
+%Intel.F1571.Description%=netuio_Device, PCI\VEN_8086&DEV_1571
+%Intel.F1889.Description%=netuio_Device, PCI\VEN_8086&DEV_1889
+%Intel.F374D.Description%=netuio_Device, PCI\VEN_8086&DEV_374D
+%Intel.F37CD.Description%=netuio_Device, PCI\VEN_8086&DEV_37CD
+%Intel.F3759.Description%=netuio_Device, PCI\VEN_8086&DEV_3759
 %vmxnet3.Description%=netuio_Device, PCI\VEN_15AD&DEV_07B0
 
 [netuio_Device.NT]
@@ -114,6 +120,12 @@ Intel.F1593.Description = "Intel(R) Ethernet Controller E810-C for SFP"
 Intel.F1599.Description = "Intel(R) Ethernet Controller E810-XXV for backplane"
 Intel.F159A.Description = "Intel(R) Ethernet Controller E810-XXV for QSFP"
 Intel.F159B.Description = "Intel(R) Ethernet Controller E810-XXV for SFP"
+Intel.F154C.Description = "Intel(R) Ethernet Virtual Function 700 Series"
+Intel.F1571.Description = "Intel(R) Ethernet Virtual Function 700 Series"
+Intel.F1889.Description = "Intel(R) Ethernet Adaptive Virtual Function"
+Intel.F374D.Description = "Intel(R) X722 Virtual Function"
+Intel.F37CD.Description = "Intel(R) Ethernet Virtual Function 700 Series"
+Intel.F3759.Description = "Intel(R) X722 Virtual Function"
 vmxnet3.Description = "VMWare Paravirtualized Ethernet v3"
 netuio.SVCDESC = "netuio Service"
 
