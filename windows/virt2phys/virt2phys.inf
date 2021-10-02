@@ -4,7 +4,7 @@
 [Version]
 Signature = "$WINDOWS NT$"
 Class = %ClassName%
-ClassGuid = {78A1C341-4539-11d3-B88D-00C04FAD5171}
+ClassGuid = {6d53d3f7-734b-44ec-a6a9-4e369dc121a4}
 Provider = %ManufacturerName%
 CatalogFile = virt2phys.cat
 DriverVer =
