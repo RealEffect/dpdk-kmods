@@ -5,10 +5,17 @@
 #ifndef VIRT2PHYS_LOGIC_H
 #define VIRT2PHYS_LOGIC_H
 
+struct virt2phys_params {
+	/** Maximum number of tracked processes (0 = unlimited). */
+	ULONG process_count_limit;
+	/** Maximum amount of memory locked by a process (0 = unlimited). */
+	ULONG64 process_memory_limit;
+};
+
 /**
  * Initialize internal data structures.
  */
-NTSTATUS virt2phys_init(void);
+NTSTATUS virt2phys_init(const struct virt2phys_params *params);
 
 /**
  * Free memory allocated for internal data structures.

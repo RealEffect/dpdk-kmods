@@ -11,6 +11,7 @@ struct virt2phys_process {
 	HANDLE id;
 	LIST_ENTRY next;
 	SINGLE_LIST_ENTRY blocks;
+	ULONG64 memory;
 };
 
 struct virt2phys_block {
@@ -18,7 +19,9 @@ struct virt2phys_block {
 	SINGLE_LIST_ENTRY next;
 };
 
+static struct virt2phys_params g_params;
 static LIST_ENTRY g_processes;
+static LONG g_process_count;
 static PKSPIN_LOCK g_lock;
 
 struct virt2phys_block *
@@ -112,7 +115,7 @@ virt2phys_process_find_block(struct virt2phys_process *process, PVOID virt)
 }
 
 NTSTATUS
-virt2phys_init(void)
+virt2phys_init(const struct virt2phys_params *params)
 {
 	g_lock = ExAllocatePoolZero(NonPagedPool, sizeof(*g_lock), 'gp2v');
 	if (g_lock == NULL)
@@ -120,6 +123,7 @@ virt2phys_init(void)
 
 	InitializeListHead(&g_processes);
 
+	g_params = *params;
 	return STATUS_SUCCESS;
 }
 
@@ -165,8 +169,10 @@ virt2phys_process_cleanup(HANDLE process_id)
 	process = virt2phys_process_detach(process_id);
 	KeReleaseSpinLock(g_lock, irql);
 
-	if (process != NULL)
+	if (process != NULL) {
 		virt2phys_process_free(process, TRUE);
+		InterlockedDecrement(&g_process_count);
+	}
 }
 
 static struct virt2phys_block *
@@ -195,21 +201,38 @@ virt2phys_exceeeds(LONG64 count, ULONG64 limit)
 	return limit > 0 && count > (LONG64)limit;
 }
 
-static BOOLEAN
+static NTSTATUS
 virt2phys_add_block(struct virt2phys_process *process,
-	struct virt2phys_block *block)
+	struct virt2phys_block *block, BOOLEAN *process_exists)
 {
 	struct virt2phys_process *existing;
+	size_t size;
 
 	existing = virt2phys_process_find(process->id);
-	if (existing == NULL)
+	*process_exists = existing != NULL;
+	if (existing == NULL) {
+		/*
+		 * This check is done with the lock held so that's no race.
+		 * Increment below must be atomic however,
+		 * because decrement is done without holding the lock.
+		 */
+		if (virt2phys_exceeeds(g_process_count + 1,
+				g_params.process_count_limit))
+			return STATUS_QUOTA_EXCEEDED;
+
 		InsertHeadList(&g_processes, &process->next);
-	else
+		InterlockedIncrement(&g_process_count);
+	} else
 		process = existing;
 
-	PushEntryList(&process->blocks, &block->next);
+	size = MmGetMdlByteCount(block->mdl);
+	if (virt2phys_exceeeds(process->memory + size,
+			g_params.process_memory_limit))
+		return STATUS_QUOTA_EXCEEDED;
 
-	return existing != NULL;
+	PushEntryList(&process->blocks, &block->next);
+	process->memory += size;
+	return STATUS_SUCCESS;
 }
 
 static NTSTATUS
@@ -356,13 +379,14 @@ virt2phys_translate(PVOID virt, PHYSICAL_ADDRESS *phys)
 	}
 
 	KeAcquireSpinLock(g_lock, &irql);
-	tracked = virt2phys_add_block(process, block);
+	status = virt2phys_add_block(process, block, &tracked);
 	KeReleaseSpinLock(g_lock, irql);
 
 	/* Same process has been added concurrently, block attached to it. */
 	if (tracked && created)
 		virt2phys_process_free(process, FALSE);
 
-	*phys = virt2phys_block_translate(block, virt);
-	return STATUS_SUCCESS;
+	if (NT_SUCCESS(status))
+		*phys = virt2phys_block_translate(block, virt);
+	return status;
 }

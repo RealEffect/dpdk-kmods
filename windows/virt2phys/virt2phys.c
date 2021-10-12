@@ -14,8 +14,13 @@ EVT_WDF_DRIVER_UNLOAD virt2phys_driver_unload;
 EVT_WDF_DRIVER_DEVICE_ADD virt2phys_driver_EvtDeviceAdd;
 EVT_WDF_IO_IN_CALLER_CONTEXT virt2phys_device_EvtIoInCallerContext;
 
+static NTSTATUS virt2phys_load_params(
+	WDFDRIVER driver, struct virt2phys_params *params);
 static VOID virt2phys_on_process_event(
 	HANDLE parent_id, HANDLE process_id, BOOLEAN create);
+
+static const ULONG PROCESS_COUNT_LIMIT_DEF = 1 << 4;
+static const ULONG PROCESS_MEMORY_LIMIT_DEF = 16 * (1 << 10); /* MB */
 
 _Use_decl_annotations_
 NTSTATUS
@@ -23,6 +28,8 @@ DriverEntry(PDRIVER_OBJECT driver_object, PUNICODE_STRING registry_path)
 {
 	WDF_DRIVER_CONFIG config;
 	WDF_OBJECT_ATTRIBUTES attributes;
+	WDFDRIVER driver;
+	struct virt2phys_params params;
 	NTSTATUS status;
 
 	PAGED_CODE();
@@ -32,11 +39,15 @@ DriverEntry(PDRIVER_OBJECT driver_object, PUNICODE_STRING registry_path)
 	config.EvtDriverUnload = virt2phys_driver_unload;
 	status = WdfDriverCreate(
 		driver_object, registry_path,
-		&attributes, &config, WDF_NO_HANDLE);
+		&attributes, &config, &driver);
 	if (!NT_SUCCESS(status))
 		return status;
 
-	status = virt2phys_init();
+	status = virt2phys_load_params(driver, &params);
+	if (!NT_SUCCESS(status))
+		return status;
+
+	status = virt2phys_init(&params);
 	if (!NT_SUCCESS(status))
 		return status;
 
@@ -55,6 +66,64 @@ DriverEntry(PDRIVER_OBJECT driver_object, PUNICODE_STRING registry_path)
 	if (!NT_SUCCESS(status))
 		return status;
 
+	return status;
+}
+
+static NTSTATUS
+virt2phys_read_param(WDFKEY key, PCUNICODE_STRING name, ULONG *value,
+	ULONG def)
+{
+	NTSTATUS status;
+
+	status = WdfRegistryQueryULong(key, name, value);
+	if (status == STATUS_OBJECT_NAME_NOT_FOUND) {
+		*value = def;
+		status = STATUS_SUCCESS;
+	}
+	return status;
+}
+
+static NTSTATUS
+virt2phys_read_mb(WDFKEY key, PCUNICODE_STRING name, ULONG64 *bytes,
+	ULONG def_mb)
+{
+	ULONG mb;
+	NTSTATUS status;
+
+	status = virt2phys_read_param(key, name, &mb, def_mb);
+	if (NT_SUCCESS(status))
+		*bytes = (ULONG64)mb * (1ULL << 20);
+	return status;
+}
+
+static NTSTATUS
+virt2phys_load_params(WDFDRIVER driver, struct virt2phys_params *params)
+{
+	static DECLARE_CONST_UNICODE_STRING(
+		process_count_limit, L"ProcessCountLimit");
+	static DECLARE_CONST_UNICODE_STRING(
+		process_memory_limit, L"ProcessMemoryLimitMB");
+
+	WDFKEY key;
+	NTSTATUS status;
+
+	status = WdfDriverOpenParametersRegistryKey(
+		driver, KEY_READ, WDF_NO_OBJECT_ATTRIBUTES, &key);
+	if (!NT_SUCCESS(status))
+		return status;
+
+	status = virt2phys_read_param(key, &process_count_limit,
+		&params->process_count_limit, PROCESS_COUNT_LIMIT_DEF);
+	if (!NT_SUCCESS(status))
+		goto cleanup;
+
+	status = virt2phys_read_mb(key, &process_memory_limit,
+		&params->process_memory_limit, PROCESS_MEMORY_LIMIT_DEF);
+	if (!NT_SUCCESS(status))
+		goto cleanup;
+
+cleanup:
+	WdfRegistryClose(key);
 	return status;
 }
 
