@@ -12,9 +12,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="virt2phys.c" />
+    <ClCompile Include="virt2phys_logic.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="virt2phys.h" />
+    <ClInclude Include="virt2phys_logic.h" />
   </ItemGroup>
   <ItemGroup>
     <Inf Include="virt2phys.inf" />
