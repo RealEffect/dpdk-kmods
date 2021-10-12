@@ -30,6 +30,9 @@
     <ClInclude Include="virt2phys_logic.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="virt2phys_trace.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="virt2phys.c">

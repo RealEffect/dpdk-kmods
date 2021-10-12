@@ -6,6 +6,8 @@
 #include <ntddk.h>
 
 #include "virt2phys_logic.h"
+#include "virt2phys_trace.h"
+#include "virt2phys_logic.tmh"
 
 struct virt2phys_process {
 	HANDLE id;
@@ -38,6 +40,8 @@ virt2phys_block_create(PMDL mdl)
 static void
 virt2phys_block_free(struct virt2phys_block *block, BOOLEAN unmap)
 {
+	TraceInfo("VA = %p, unmap = %!bool!", block->mdl->StartVa, unmap);
+
 	if (unmap)
 		MmUnlockPages(block->mdl);
 
@@ -75,6 +79,8 @@ virt2phys_process_free(struct virt2phys_process *process, BOOLEAN unmap)
 {
 	PSINGLE_LIST_ENTRY node;
 	struct virt2phys_block *block;
+
+	TraceInfo("ID = %p, unmap = %!bool!", process->id, unmap);
 
 	node = process->blocks.Next;
 	while (node != NULL) {
@@ -208,6 +214,8 @@ virt2phys_add_block(struct virt2phys_process *process,
 	struct virt2phys_process *existing;
 	size_t size;
 
+	TraceInfo("ID = %p, VA = %p", process->id, block->mdl->StartVa);
+
 	existing = virt2phys_process_find(process->id);
 	*process_exists = existing != NULL;
 	if (existing == NULL) {
@@ -217,8 +225,11 @@ virt2phys_add_block(struct virt2phys_process *process,
 		 * because decrement is done without holding the lock.
 		 */
 		if (virt2phys_exceeeds(g_process_count + 1,
-				g_params.process_count_limit))
+				g_params.process_count_limit)) {
+			TraceWarning("Process count limit reached (%lu)",
+				g_params.process_count_limit);
 			return STATUS_QUOTA_EXCEEDED;
+		}
 
 		InsertHeadList(&g_processes, &process->next);
 		InterlockedIncrement(&g_process_count);
@@ -227,8 +238,11 @@ virt2phys_add_block(struct virt2phys_process *process,
 
 	size = MmGetMdlByteCount(block->mdl);
 	if (virt2phys_exceeeds(process->memory + size,
-			g_params.process_memory_limit))
+			g_params.process_memory_limit)) {
+		TraceWarning("Process %p memory limit reached (%llu bytes)",
+			process->id, g_params.process_memory_limit);
 		return STATUS_QUOTA_EXCEEDED;
+	}
 
 	PushEntryList(&process->blocks, &block->next);
 	process->memory += size;
@@ -277,8 +291,10 @@ virt2phys_check_memory(PMDL mdl)
 	size_t size;
 	NTSTATUS status;
 
-	if (!virt2phys_is_contiguous(mdl))
+	if (!virt2phys_is_contiguous(mdl)) {
+		TraceWarning("Locked region is not physycally contiguous");
 		return STATUS_UNSUCCESSFUL;
+	}
 
 	virt = MmGetMdlVirtualAddress(mdl);
 	size = MmGetMdlByteCount(mdl);
@@ -288,12 +304,19 @@ virt2phys_check_memory(PMDL mdl)
 	if (!NT_SUCCESS(status))
 		return status;
 
-	if (info.AllocationBase != virt || info.RegionSize != size)
+	if (info.AllocationBase != virt || info.RegionSize != size) {
+		TraceWarning("Race for the region: supplied %p (%llu bytes), locked %p (%llu bytes)",
+			virt, size, info.AllocationBase, info.RegionSize);
 		return STATUS_UNSUCCESSFUL;
-	if (info.State != MEM_COMMIT)
+	}
+	if (info.State != MEM_COMMIT) {
+		TraceWarning("Attempt to lock uncommitted memory");
 		return STATUS_UNSUCCESSFUL;
-	if (info.Type != MEM_PRIVATE)
+	}
+	if (info.Type != MEM_PRIVATE) {
+		TraceWarning("Attempt to lock shared memory");
 		return STATUS_UNSUCCESSFUL;
+	}
 	return status;
 }
 

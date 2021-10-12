@@ -8,6 +8,8 @@
 
 #include "virt2phys.h"
 #include "virt2phys_logic.h"
+#include "virt2phys_trace.h"
+#include "virt2phys.tmh"
 
 DRIVER_INITIALIZE DriverEntry;
 EVT_WDF_DRIVER_UNLOAD virt2phys_driver_unload;
@@ -65,6 +67,8 @@ DriverEntry(PDRIVER_OBJECT driver_object, PUNICODE_STRING registry_path)
 		virt2phys_on_process_event, FALSE);
 	if (!NT_SUCCESS(status))
 		return status;
+
+	WPP_INIT_TRACING(driver_object, registry_path);
 
 	return status;
 }
@@ -131,11 +135,11 @@ _Use_decl_annotations_
 VOID
 virt2phys_driver_unload(WDFDRIVER driver)
 {
-	UNREFERENCED_PARAMETER(driver);
-
 	PsSetCreateProcessNotifyRoutine(virt2phys_on_process_event, TRUE);
 
 	virt2phys_cleanup();
+
+	WPP_CLEANUP(WdfDriverWdmGetDriverObject(driver));
 }
 
 _Use_decl_annotations_
@@ -157,12 +161,15 @@ virt2phys_driver_EvtDeviceAdd(WDFDRIVER driver, PWDFDEVICE_INIT init)
 
 	status = WdfDeviceCreate(&init, &attributes, &device);
 	if (!NT_SUCCESS(status)) {
+		TraceError("WdfDriverCreate() = %!STATUS!", status);
 		return status;
 	}
 
 	status = WdfDeviceCreateDeviceInterface(
 		device, &GUID_DEVINTERFACE_VIRT2PHYS, NULL);
 	if (!NT_SUCCESS(status)) {
+		TraceError("WdfDeviceCreateDeviceInterface() = %!STATUS!",
+			status);
 		return status;
 	}
 
@@ -187,12 +194,14 @@ virt2phys_device_EvtIoInCallerContext(WDFDEVICE device, WDFREQUEST request)
 	WdfRequestGetParameters(request, &params);
 
 	if (params.Type != WdfRequestTypeDeviceControl) {
+		TraceWarning("Bogus IO request type %lu", params.Type);
 		WdfRequestComplete(request, STATUS_NOT_SUPPORTED);
 		return;
 	}
 
 	code = params.Parameters.DeviceIoControl.IoControlCode;
 	if (code != IOCTL_VIRT2PHYS_TRANSLATE) {
+		TraceWarning("Bogus IO control code %lx", code);
 		WdfRequestComplete(request, STATUS_NOT_SUPPORTED);
 		return;
 	}
@@ -200,6 +209,7 @@ virt2phys_device_EvtIoInCallerContext(WDFDEVICE device, WDFREQUEST request)
 	status = WdfRequestRetrieveInputBuffer(
 			request, sizeof(*virt), (PVOID *)&virt, &size);
 	if (!NT_SUCCESS(status)) {
+		TraceWarning("Retrieving input buffer: %!STATUS!", status);
 		WdfRequestComplete(request, status);
 		return;
 	}
@@ -207,6 +217,7 @@ virt2phys_device_EvtIoInCallerContext(WDFDEVICE device, WDFREQUEST request)
 	status = WdfRequestRetrieveOutputBuffer(
 		request, sizeof(*phys), (PVOID *)&phys, &size);
 	if (!NT_SUCCESS(status)) {
+		TraceWarning("Retrieving output buffer: %!STATUS!", status);
 		WdfRequestComplete(request, status);
 		return;
 	}
@@ -214,6 +225,9 @@ virt2phys_device_EvtIoInCallerContext(WDFDEVICE device, WDFREQUEST request)
 	status = virt2phys_translate(*virt, phys);
 	if (NT_SUCCESS(status))
 		WdfRequestSetInformation(request, sizeof(*phys));
+
+	TraceInfo("Translate %p to %llx: %!STATUS!",
+		virt, phys->QuadPart, status);
 	WdfRequestComplete(request, status);
 }
 
