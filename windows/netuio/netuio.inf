@@ -29,6 +29,7 @@ HKR,,Icon,,-5
 [Standard.NT$ARCH$]
 %netuio.DeviceDesc%=netuio_Device, Root\netuio
 %netuio.nvme.DeviceDesc%=netuio_Device, PCI\CC_010802
+%Intel.F1521.Description%=netuio_Device, PCI\VEN_8086&DEV_1521
 %Intel.F1572.Description%=netuio_Device, PCI\VEN_8086&DEV_1572
 %Intel.F1580.Description%=netuio_Device, PCI\VEN_8086&DEV_1580
 %Intel.F1581.Description%=netuio_Device, PCI\VEN_8086&DEV_1581
@@ -43,6 +44,8 @@ HKR,,Icon,,-5
 %Intel.F101F.Description%=netuio_Device, PCI\VEN_8086&DEV_101F
 %Intel.F104F.Description%=netuio_Device, PCI\VEN_8086&DEV_104F
 %Intel.F104E.Description%=netuio_Device, PCI\VEN_8086&DEV_104E
+%Intel.F10D3.Description%=netuio_Device, PCI\VEN_8086&DEV_10D3
+%Intel.F10ED.Description%=netuio_Device, PCI\VEN_8086&DEV_10ED
 %Intel.F1591.Description%=netuio_Device, PCI\VEN_8086&DEV_1591
 %Intel.F1592.Description%=netuio_Device, PCI\VEN_8086&DEV_1592
 %Intel.F1593.Description%=netuio_Device, PCI\VEN_8086&DEV_1593
@@ -100,6 +103,7 @@ ClassName = "Windows UIO"
 DiskName = "DPDK netUIO Installation Disk"
 netuio.DeviceDesc = "netuio Device"
 netuio.nvme.DeviceDesc = "netuio NVM Express Controller"
+Intel.F1521.Description = "Intel(R) I350 Gigabit Network Connection"
 Intel.F1572.Description = "Intel(R) Ethernet Controller X710 for 10GbE SFP+"
 Intel.F1580.Description = "Intel(R) Ethernet Controller XL710 for 40GbE backplane"
 Intel.F1581.Description = "Intel(R) Ethernet Controller X710 for 10GbE backplane"
@@ -114,6 +118,8 @@ Intel.F15FF.Description = "Intel(R) Ethernet Controller X710 for 10GBASE-T"
 Intel.F101F.Description = "Intel(R) Ethernet Controller V710 for 5GBASE-T"
 Intel.F104F.Description = "Intel(R) Ethernet Controller X710 for 10 Gigabit backplane"
 Intel.F104E.Description = "Intel(R) Ethernet Controller X710 for 10 Gigabit SFP+"
+Intel.F10D3.Description = "Intel(R) 82574L Gigabit Network Connection"
+Intel.F10ED.Description = "Intel(R) 82599 Virtual Function"
 Intel.F1591.Description = "Intel(R) Ethernet Controller E810-C for backplane"
 Intel.F1592.Description = "Intel(R) Ethernet Controller E810-C for QSFP"
 Intel.F1593.Description = "Intel(R) Ethernet Controller E810-C for SFP"
