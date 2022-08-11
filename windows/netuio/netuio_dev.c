@@ -170,8 +170,6 @@ netuio_map_hw_resources(WDFDEVICE Device, WDFCMRESLIST Resources, WDFCMRESLIST R
 
     PCM_PARTIAL_RESOURCE_DESCRIPTOR descriptor;
     ULONG next_descriptor = 0;
-    ULONG curr_bar = 0;
-    ULONG prev_bar = 0;
 
    /*
     * ResourcesTranslated report MMIO BARs in the correct order, but their
@@ -195,9 +193,9 @@ netuio_map_hw_resources(WDFDEVICE Device, WDFCMRESLIST Resources, WDFCMRESLIST R
     * searching for the next MMIO resource each time.
     */
     for (INT bar_index = 0; bar_index < PCI_MAX_BAR; bar_index++) {
-        prev_bar = curr_bar;
-        curr_bar = pci_config.u.type0.BaseAddresses[bar_index];
-        if (curr_bar == 0 || (prev_bar & PCI_TYPE_64BIT)) {
+        ULONG bar_value = pci_config.u.type0.BaseAddresses[bar_index];
+
+        if (bar_value == 0) {
             continue;
         }
 
@@ -236,6 +234,11 @@ netuio_map_hw_resources(WDFDEVICE Device, WDFCMRESLIST Resources, WDFCMRESLIST R
         }
 
         ctx->dpdk_hw[bar_index].mem.size = ctx->bar[bar_index].size;
+
+        // Skip the next BAR slot used by the current 64-bit address.
+        if (bar_value & PCI_TYPE_64BIT) {
+            bar_index++;
+        }
     } // for bar_index
 
     status = STATUS_SUCCESS;
